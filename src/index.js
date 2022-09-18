@@ -10,48 +10,51 @@ const refs = {
   div: document.querySelector('.country-info'),
 };
 
-refs.input.addEventListener('input', debounce(nameCountry, DEBOUNCE_DELAY));
+refs.input.addEventListener('input', debounce(createResponse, DEBOUNCE_DELAY));
 
-function nameCountry(e) {
+function createResponse(e) {
+  eraseHtml();
   let name = e.target.value;
   if (name === '') {
-    refs.ul.innerHTML = '';
-    refs.div.innerHTML = '';
     return;
-  } else {
-    refs.ul.innerHTML = '';
-    refs.div.innerHTML = '';
-    API.fetchCountries(name)
-      .then(resultJson)
-      .then(renderResult)
-      .catch(rejectedResult);
   }
+  API.fetchCountries(name).then(renderResult).catch(rejectedResult);
 }
 
-function resultJson(result) {
-  return result.json();
+function eraseHtml() {
+  refs.ul.innerHTML = '';
+  refs.div.innerHTML = '';
 }
-
 function renderResult(result) {
-  if (result.length > 10) {
+  const resultLength = result.length;
+  if (resultLength > 10) {
     Notify.info('Too many matches found. Please enter a more specific name.');
-  } else if (result.length >= 2 && result.length <= 10) {
-    return result.map(({ name, flags }) => {
-      const nameCountry = `<li><img src='${flags.svg}' width=30 height=20> ${name.official}</li>`;
-      return refs.ul.insertAdjacentHTML('beforeend', nameCountry.trim());
-    });
-  } else {
-    return result.map(({ name, capital, population, flags, languages }) => {
-      const infoCountry = `<li><img src='${flags.svg}' width=30 height=20> ${
-        name.official
-      }</li><li>capital: ${capital.join(
-        ''
-      )}</li><li>population: ${population}</li><li>languages: ${Object.values(
-        languages
-      ).join(' ')}</li>`;
-      return refs.div.insertAdjacentHTML('beforeend', infoCountry.trim());
-    });
+    return;
   }
+  if (resultLength >= 2 && resultLength <= 10) {
+    refs.ul.insertAdjacentHTML('beforeend', nameCountry(result));
+    return;
+  }
+
+  refs.div.insertAdjacentHTML('beforeend', infoCountry(result));
+}
+function nameCountry(result) {
+  return result.map(
+    obj =>
+      `<li><img src = "${obj.flags.svg}" width=30 height=20> "${obj.name.official}"</li>`
+  );
+}
+
+function infoCountry(result) {
+  return result.map(
+    obj =>
+      `<li><img src = "${obj.flags.svg}" width=30 height=20> ${
+        obj.name.official
+      }</li> 
+  <li>capital: ${obj.capital.join('')}</li>
+  <li>population: ${obj.population}</li>
+  <li>languages: ${Object.values(obj.languages).join('')}</li>`
+  );
 }
 
 function rejectedResult() {
